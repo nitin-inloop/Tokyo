@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#060010">
+    <title>Tokyo AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        :root {
+            --bg: #060010;
+            --accent: #B19EEF;
+            --accent-glow: rgba(177, 158, 239, 0.4);
+            --text: #eeeeff;
+            --text-dim: rgba(177, 158, 239, 0.45);
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Outfit', sans-serif;
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            user-select: none;
+            position: relative;
+        }
+
+        /* ═══════ GHOST CURSOR HOST ═══════ */
+        .ghost-cursor {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .ghost-cursor>canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+        }
+
+        /* ═══════ HEADER ═══════ */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 28px;
+            z-index: 10;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            letter-spacing: 5px;
+            color: #fff;
+            text-shadow: 0 0 20px var(--accent-glow);
+        }
+
+        .header-subtitle {
+            font-size: 0.7rem;
+            font-weight: 300;
+            letter-spacing: 3px;
+            color: var(--text-dim);
+            margin-top: 2px;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            background: rgba(177, 158, 239, 0.08);
+            border: 1px solid rgba(177, 158, 239, 0.15);
+        }
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #7cfc7c;
+            box-shadow: 0 0 8px rgba(124, 252, 124, 0.6);
+            animation: pulseDot 2s infinite;
+        }
+
+        .status-text {
+            font-size: 0.7rem;
+            font-weight: 400;
+            letter-spacing: 1px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        @keyframes pulseDot {
+
+            0%,
+            100% {
+                opacity: 0.5;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 1;
+                transform: scale(1.3);
+            }
+        }
+
+        /* ═══════ ORB ═══════ */
+        #orb-canvas {
+            width: 100%;
+            height: 200px;
+            flex-shrink: 0;
+            z-index: 1;
+        }
+
+        /* ═══════ CHAT ═══════ */
+        .chat-area {
+            flex: 1;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+            padding: 0 28px 110px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            scrollbar-width: none;
+            z-index: 2;
+        }
+
+        .chat-area::-webkit-scrollbar {
+            display: none;
+        }
+
+        .msg {
+            max-width: 80%;
+            padding: 12px 18px;
+            padding-top: 28px;
+            border-radius: 16px;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            position: relative;
+            animation: msgSlide 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        .msg.user {
+            align-self: flex-end;
+            background: rgba(177, 158, 239, 0.12);
+            border: 1px solid rgba(177, 158, 239, 0.15);
+            color: #e0d4ff;
+        }
+
+        .msg.user::before {
+            content: 'YOU';
+            position: absolute;
+            top: 8px;
+            right: 18px;
+            font-size: 0.55rem;
+            font-weight: 600;
+            letter-spacing: 2px;
+            color: rgba(177, 158, 239, 0.5);
+        }
+
+        .msg.tokyo {
+            align-self: flex-start;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            color: #d0d0e8;
+        }
+
+        .msg.tokyo::before {
+            content: 'TOKYO';
+            position: absolute;
+            top: 8px;
+            left: 18px;
+            font-size: 0.55rem;
+            font-weight: 600;
+            letter-spacing: 2px;
+            color: var(--accent);
+        }
+
+        .msg.system {
+            align-self: center;
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            font-size: 0.78rem;
+            letter-spacing: 1.5px;
+        }
+
+        .welcome-msg {
+            text-align: center;
+            padding: 30px 20px 10px;
+            animation: fadeInUp 0.6s ease;
+        }
+
+        .welcome-msg h2 {
+            font-size: 1.4rem;
+            font-weight: 300;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 6px;
+        }
+
+        .welcome-msg p {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            font-weight: 300;
+        }
+
+        @keyframes msgSlide {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ═══════ INPUT BAR ═══════ */
+        .input-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            padding: 18px 28px 32px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            background: linear-gradient(0deg, var(--bg) 50%, transparent);
+            z-index: 10;
+        }
+
+        .mic-btn {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: rgba(177, 158, 239, 0.1);
+            border: 1px solid rgba(177, 158, 239, 0.2);
+            color: var(--accent);
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .mic-btn:hover {
+            background: rgba(177, 158, 239, 0.2);
+            border-color: rgba(177, 158, 239, 0.4);
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(177, 158, 239, 0.2);
+        }
+
+        .mic-btn:active {
+            transform: scale(0.92);
+        }
+
+        .mic-btn.active {
+            background: rgba(255, 60, 60, 0.12);
+            border-color: rgba(255, 60, 60, 0.4);
+            color: #ff4444;
+            box-shadow: 0 0 25px rgba(255, 60, 60, 0.25);
+            animation: micPulse 1.5s infinite;
+        }
+
+        @keyframes micPulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 15px rgba(255, 60, 60, 0.15);
+            }
+
+            50% {
+                box-shadow: 0 0 30px rgba(255, 60, 60, 0.35);
+            }
+        }
+
+        .input-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        .input-wrapper input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(177, 158, 239, 0.12);
+            border-radius: 14px;
+            color: #fff;
+            font-size: 1rem;
+            font-family: inherit;
+            padding: 14px 18px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .input-wrapper input::placeholder {
+            color: var(--text-dim);
+        }
+
+        .input-wrapper input:focus {
+            border-color: rgba(177, 158, 239, 0.35);
+            background: rgba(255, 255, 255, 0.06);
+            box-shadow: 0 0 20px rgba(177, 158, 239, 0.1);
+        }
+
+        .send-btn {
+            background: rgba(177, 158, 239, 0.12);
+            border: 1px solid rgba(177, 158, 239, 0.2);
+            color: var(--accent);
+            font-size: 0.8rem;
+            font-weight: 600;
+            font-family: inherit;
+            letter-spacing: 2px;
+            padding: 14px 22px;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .send-btn:hover {
+            background: rgba(177, 158, 239, 0.2);
+            border-color: rgba(177, 158, 239, 0.4);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(177, 158, 239, 0.15);
+        }
+
+        .send-btn:active {
+            transform: translateY(0) scale(0.97);
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Ghost Cursor Layer -->
+    <div class="ghost-cursor" id="ghostHost"></div>
+
+    <!-- Header -->
+    <div class="header">
+        <div>
+            <h1>TOKYO</h1>
+            <div class="header-subtitle">AI ASSISTANT</div>
+        </div>
+        <div class="status-badge">
+            <div class="status-dot" id="statusDot"></div>
+            <span class="status-text">ONLINE</span>
+        </div>
+    </div>
+
+    <!-- Orb -->
+    <canvas id="orb-canvas"></canvas>
+
+    <!-- Chat -->
+    <div class="chat-area" id="chat">
+        <div class="welcome-msg">
+            <h2>Welcome back</h2>
+            <p>How can I help you today?</p>
+        </div>
+    </div>
+
+    <!-- Input -->
+    <div class="input-bar">
+        <div class="mic-btn" id="micBtn" onclick="toggleMic()">🎙</div>
+        <div class="input-wrapper">
+            <input type="text" id="textInput" placeholder="Ask Tokyo anything..." autocomplete="off">
+        </div>
+        <button class="send-btn" onclick="sendText()">SEND</button>
+    </div>
+
+    <!-- ═══════ APP LOGIC ═══════ -->
+    <script>
+        const chat = document.getElementById('chat');
+        const input = document.getElementById('textInput');
+        const micBtn = document.getElementById('micBtn');
+
+        function addMsg(text, type = 'tokyo') {
+            // Remove welcome message on first real message
+            const welcome = chat.querySelector('.welcome-msg');
+            if (welcome) welcome.remove();
+
+            const d = document.createElement('div');
+            d.className = `msg ${type}`;
+            d.textContent = text;
+            chat.appendChild(d);
+            chat.scrollTo({ top: chat.scrollHeight, behavior: 'smooth' });
+        }
+
+        async function cmd(text) {
+            if (!text.trim()) return;
+            addMsg(text, 'user');
+            try {
+                const res = await fetch('/command', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text })
+                });
+                const data = await res.json();
+                if (data.response) addMsg(data.response, 'tokyo');
+            } catch (e) {
+                addMsg('Connection error — is Tokyo running?', 'system');
+            }
+        }
+
+        function sendText() {
+            const t = input.value.trim();
+            if (t) { cmd(t); input.value = ''; }
+        }
+        input.addEventListener('keydown', e => { if (e.key === 'Enter') sendText(); });
+
+        // Voice
+        let recognition = null, isListening = false;
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SR();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.onstart = () => { isListening = true; micBtn.classList.add('active'); };
+            recognition.onend = () => { isListening = false; micBtn.classList.remove('active'); };
+            recognition.onresult = e => cmd(e.results[0][0].transcript);
+        }
+        function toggleMic() {
+            if (recognition) isListening ? recognition.stop() : recognition.start();
+        }
+
+        // SSE
+        function connectSSE() {
+            const es = new EventSource('/stream');
+            es.onmessage = e => {
+                try {
+                    const d = JSON.parse(e.data);
+                    if (d.type === 'response') addMsg(d.text, 'tokyo');
+                } catch (err) { }
+            };
+            es.onerror = () => { es.close(); setTimeout(connectSSE, 3000); };
+        }
+        connectSSE();
+    </script>
+
+    <!-- ═══════ ORB ANIMATION ═══════ -->
+    <script>
+        const cvs = document.getElementById('orb-canvas');
+        const ctx = cvs.getContext('2d');
+        let W, H;
+        function resizeOrb() {
+            W = cvs.clientWidth * devicePixelRatio;
+            H = cvs.clientHeight * devicePixelRatio;
+            cvs.width = W; cvs.height = H;
+        }
+        window.addEventListener('resize', resizeOrb);
+        resizeOrb();
+
+        (function drawOrb() {
+            requestAnimationFrame(drawOrb);
+            ctx.clearRect(0, 0, W, H);
+            const cx = W / 2, cy = H / 2;
+            const t = Date.now() * 0.001;
+            const r = Math.min(W, H) * 0.14 + Math.sin(t * 1.5) * 4;
+
+            // Outer glow
+            const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r * 4);
+            g.addColorStop(0, 'rgba(177, 158, 239, 0.12)');
+            g.addColorStop(0.5, 'rgba(100, 80, 180, 0.04)');
+            g.addColorStop(1, 'transparent');
+            ctx.fillStyle = g;
+            ctx.beginPath(); ctx.arc(cx, cy, r * 4, 0, Math.PI * 2); ctx.fill();
+
+            // Core orb
+            const cg = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+            cg.addColorStop(0, '#e8ddff');
+            cg.addColorStop(0.4, '#B19EEF');
+            cg.addColorStop(1, '#4a3090');
+            ctx.fillStyle = cg;
+            ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+
+            // Orbital ring
+            ctx.strokeStyle = 'rgba(177, 158, 239, 0.25)';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.ellipse(cx, cy, r * 2.5, r * 0.6, t * 0.3, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Second ring
+            ctx.strokeStyle = 'rgba(177, 158, 239, 0.12)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.ellipse(cx, cy, r * 1.8, r * 0.5, -t * 0.5, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // T letter
+            ctx.fillStyle = '#fff';
+            ctx.font = `600 ${r * 0.7}px Outfit`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('T', cx, cy);
+        })();
+    </script>
+
+    <!-- ═══════ GHOST CURSOR — ReactBits Port ═══════ -->
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+    </script>
+    <script type="module">
+        import * as THREE from 'three';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+
+        const host = document.getElementById('ghostHost');
+        if (!host) { console.error('Ghost cursor host not found'); }
+
+        // ── Config matching ReactBits usage ──
+        const TRAIL = 20;       // Reduced from 50 for performance
+        const INERTIA = 0.5;
+        const GRAIN = 0.05;
+        const BLOOM_STR = 0.1;
+        const BLOOM_RAD = 1.0;
+        const BLOOM_THR = 0.025;
+        const BRIGHTNESS = 2;
+        const COLOR = new THREE.Color('#B19EEF');
+        const MAX_DPR = 1.0;      // Better quality rendering
+        const FADE_DELAY = 1000;
+        const FADE_DUR = 1500;
+        const MIX_BLEND = 'screen';
+
+        // ── Renderer ──
+        const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        const renderer = new THREE.WebGLRenderer({
+            antialias: false,
+            alpha: true,
+            depth: false,
+            stencil: false,
+            powerPreference: 'high-performance',
+            premultipliedAlpha: false,
+            preserveDrawingBuffer: false
+        });
+        renderer.setClearColor(0x000000, 0);
+        renderer.domElement.style.pointerEvents = 'none';
+        renderer.domElement.style.mixBlendMode = MIX_BLEND;
+        host.appendChild(renderer.domElement);
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+        // ── Trail buffer ──
+        const trailBuf = Array.from({ length: TRAIL }, () => new THREE.Vector2(0.5, 0.5));
+        let head = 0;
+
+        // ── Shaders (exact ReactBits fbm noise) ──
+        const vertSrc = `
+      varying vec2 vUv;
+      void main() { vUv = uv; gl_Position = vec4(position, 1.0); }
+    `;
+
+        const fragSrc = `
+      #define MAX_TRAIL_LENGTH ${TRAIL}
+      uniform float iTime;
+      uniform vec3  iResolution;
+      uniform vec2  iMouse;
+      uniform vec2  iPrevMouse[MAX_TRAIL_LENGTH];
+      uniform float iOpacity;
+      uniform float iScale;
+      uniform vec3  iBaseColor;
+      uniform float iBrightness;
+      varying vec2  vUv;
+
+      float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123); }
+
+      float noise(vec2 p) {
+        vec2 i = floor(p), f = fract(p);
+        f *= f * (3.0 - 2.0 * f);
+        return mix(
+          mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x),
+          mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x),
+          f.y
+        );
+      }
+
+      float fbm(vec2 p) {
+        float v = 0.0, a = 0.5;
+        mat2 m = mat2(cos(0.5), sin(0.5), -sin(0.5), cos(0.5));
+        for (int i = 0; i < 5; i++) {
+          v += a * noise(p);
+          p = m * p * 2.0;
+          a *= 0.5;
+        }
+        return v;
+      }
+
+      vec3 tint1(vec3 base) { return mix(base, vec3(1.0), 0.15); }
+      vec3 tint2(vec3 base) { return mix(base, vec3(0.8, 0.9, 1.0), 0.25); }
+
+      vec4 blob(vec2 p, vec2 mousePos, float intensity, float activity) {
+        vec2 q = vec2(
+          fbm(p * iScale + iTime * 0.1),
+          fbm(p * iScale + vec2(5.2, 1.3) + iTime * 0.1)
+        );
+        vec2 r = vec2(
+          fbm(p * iScale + q * 1.5 + iTime * 0.15),
+          fbm(p * iScale + q * 1.5 + vec2(8.3, 2.8) + iTime * 0.15)
+        );
+
+        float smoke = fbm(p * iScale + r * 0.8);
+        float radius = 0.5 + 0.3 * (1.0 / iScale);
+        float distFactor = 1.0 - smoothstep(0.0, radius * activity, length(p - mousePos));
+        float alpha = pow(smoke, 2.5) * distFactor;
+
+        vec3 c1 = tint1(iBaseColor);
+        vec3 c2 = tint2(iBaseColor);
+        vec3 color = mix(c1, c2, sin(iTime * 0.5) * 0.5 + 0.5);
+
+        return vec4(color * alpha * intensity, alpha * intensity);
+      }
+
+      void main() {
+        vec2 uv = (gl_FragCoord.xy / iResolution.xy * 2.0 - 1.0) * vec2(iResolution.x / iResolution.y, 1.0);
+        vec2 mouse = (iMouse * 2.0 - 1.0) * vec2(iResolution.x / iResolution.y, 1.0);
+
+        vec3 colorAcc = vec3(0.0);
+        float alphaAcc = 0.0;
+
+        // Head blob
+        vec4 b = blob(uv, mouse, 1.0, iOpacity);
+        colorAcc += b.rgb;
+        alphaAcc += b.a;
+
+        // Trail blobs
+        for (int i = 0; i < MAX_TRAIL_LENGTH; i++) {
+          vec2 pm = (iPrevMouse[i] * 2.0 - 1.0) * vec2(iResolution.x / iResolution.y, 1.0);
+          float t = 1.0 - float(i) / float(MAX_TRAIL_LENGTH);
+          t = pow(t, 2.0);
+          if (t > 0.01) {
+            vec4 bt = blob(uv, pm, t * 0.8, iOpacity);
+            colorAcc += bt.rgb;
+            alphaAcc += bt.a;
+          }
+        }
+
+        colorAcc *= iBrightness;
+        float outAlpha = clamp(alphaAcc * iOpacity, 0.0, 1.0);
+        gl_FragColor = vec4(colorAcc, outAlpha);
+      }
+    `;
+
+        // ── Film Grain Shader ──
+        const FilmGrainShader = {
+            uniforms: {
+                tDiffuse: { value: null },
+                iTime: { value: 0 },
+                intensity: { value: GRAIN }
+            },
+            vertexShader: `
+        varying vec2 vUv;
+        void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
+      `,
+            fragmentShader: `
+        uniform sampler2D tDiffuse;
+        uniform float iTime;
+        uniform float intensity;
+        varying vec2 vUv;
+        float hash1(float n) { return fract(sin(n) * 43758.5453); }
+        void main() {
+          vec4 color = texture2D(tDiffuse, vUv);
+          float n = hash1(vUv.x * 1000.0 + vUv.y * 2000.0 + iTime) * 2.0 - 1.0;
+          color.rgb += n * intensity * color.rgb;
+          gl_FragColor = color;
+        }
+      `
+        };
+
+        // ── Unpremultiply Shader ──
+        const UnpremultiplyShader = {
+            uniforms: { tDiffuse: { value: null } },
+            vertexShader: `
+        varying vec2 vUv;
+        void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
+      `,
+            fragmentShader: `
+        uniform sampler2D tDiffuse;
+        varying vec2 vUv;
+        void main() {
+          vec4 c = texture2D(tDiffuse, vUv);
+          float a = max(c.a, 1e-5);
+          vec3 straight = c.rgb / a;
+          gl_FragColor = vec4(clamp(straight, 0.0, 1.0), c.a);
+        }
+      `
+        };
+
+        // ── Material ──
+        function calcScale() {
+            return Math.max(0.5, Math.min(2.0,
+                Math.min(Math.max(1, window.innerWidth), Math.max(1, window.innerHeight)) / 600
+            ));
+        }
+
+        const material = new THREE.ShaderMaterial({
+            defines: { MAX_TRAIL_LENGTH: TRAIL },
+            uniforms: {
+                iTime: { value: 0 },
+                iResolution: { value: new THREE.Vector3(1, 1, 1) },
+                iMouse: { value: new THREE.Vector2(0.5, 0.5) },
+                iPrevMouse: { value: trailBuf.map(v => v.clone()) },
+                iOpacity: { value: 1.0 },
+                iScale: { value: calcScale() },
+                iBaseColor: { value: new THREE.Vector3(COLOR.r, COLOR.g, COLOR.b) },
+                iBrightness: { value: BRIGHTNESS }
+            },
+            vertexShader: vertSrc,
+            fragmentShader: fragSrc,
+            transparent: true,
+            depthTest: false,
+            depthWrite: false
+        });
+
+        scene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material));
+
+        // ── Post-processing pipeline ──
+        const composer = new EffectComposer(renderer);
+        composer.addPass(new RenderPass(scene, camera));
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(1, 1), BLOOM_STR, BLOOM_RAD, BLOOM_THR);
+        composer.addPass(bloomPass);
+        composer.addPass(new ShaderPass(FilmGrainShader));
+        composer.addPass(new ShaderPass(UnpremultiplyShader));
+
+        // ── Resize ──
+        const pixelBudget = isTouch ? 0.9e6 : 1.3e6;
+        function onResize() {
+            const cssW = Math.max(1, window.innerWidth);
+            const cssH = Math.max(1, window.innerHeight);
+            const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
+            const need = cssW * cssH * dpr * dpr;
+            const scale = need <= pixelBudget ? 1 : Math.max(0.5, Math.sqrt(pixelBudget / need));
+            const pr = dpr * scale;
+
+            renderer.setPixelRatio(pr);
+            renderer.setSize(cssW, cssH, false);
+            composer.setSize(cssW, cssH);
+
+            const wpx = Math.max(1, Math.floor(cssW * pr));
+            const hpx = Math.max(1, Math.floor(cssH * pr));
+            material.uniforms.iResolution.value.set(wpx, hpx, 1);
+            material.uniforms.iScale.value = calcScale();
+            bloomPass.setSize(wpx, hpx);
+        }
+        onResize();
+        window.addEventListener('resize', onResize);
+
+        // ── Pointer tracking ──
+        const mouse = new THREE.Vector2(0.5, 0.5);
+        const velocity = new THREE.Vector2(0, 0);
+        let pointerActive = false;
+        let lastMoveTime = performance.now();
+        let fadeOpacity = 1.0;
+        let running = true;
+
+        // Listen on document for full-page tracking
+        document.addEventListener('pointermove', e => {
+            mouse.set(
+                THREE.MathUtils.clamp(e.clientX / window.innerWidth, 0, 1),
+                THREE.MathUtils.clamp(1 - e.clientY / window.innerHeight, 0, 1)
+            );
+            pointerActive = true;
+            lastMoveTime = performance.now();
+            ensureLoop();
+        }, { passive: true });
+
+        // Touch support
+        document.addEventListener('touchmove', e => {
+            if (e.touches.length > 0) {
+                const touch = e.touches[0];
+                mouse.set(
+                    THREE.MathUtils.clamp(touch.clientX / window.innerWidth, 0, 1),
+                    THREE.MathUtils.clamp(1 - touch.clientY / window.innerHeight, 0, 1)
+                );
+                pointerActive = true;
+                lastMoveTime = performance.now();
+                ensureLoop();
+            }
+        }, { passive: true });
+
+        document.addEventListener('pointerleave', () => {
+            pointerActive = false;
+            lastMoveTime = performance.now();
+        });
+
+        function ensureLoop() {
+            if (!running) { running = true; requestAnimationFrame(animate); }
+        }
+
+        // ── Animation loop ──
+        const startTime = performance.now();
+        const filmPass = composer.passes[2]; // Film grain pass
+
+        function animate() {
+            const now = performance.now();
+            const t = (now - startTime) / 1000;
+
+            if (pointerActive) {
+                velocity.set(
+                    mouse.x - material.uniforms.iMouse.value.x,
+                    mouse.y - material.uniforms.iMouse.value.y
+                );
+                material.uniforms.iMouse.value.copy(mouse);
+                fadeOpacity = 1.0;
+            } else {
+                velocity.multiplyScalar(INERTIA);
+                if (velocity.lengthSq() > 1e-6) {
+                    material.uniforms.iMouse.value.add(velocity);
+                }
+                const dt = now - lastMoveTime;
+                if (dt > FADE_DELAY) {
+                    fadeOpacity = Math.max(0, 1 - Math.min(1, (dt - FADE_DELAY) / FADE_DUR));
+                }
+            }
+
+            // Update trail ring buffer
+            head = (head + 1) % TRAIL;
+            trailBuf[head].copy(material.uniforms.iMouse.value);
+            const arr = material.uniforms.iPrevMouse.value;
+            for (let i = 0; i < TRAIL; i++) {
+                arr[i].copy(trailBuf[(head - i + TRAIL) % TRAIL]);
+            }
+
+            material.uniforms.iOpacity.value = fadeOpacity;
+            material.uniforms.iTime.value = t;
+            if (filmPass?.uniforms?.iTime) filmPass.uniforms.iTime.value = t;
+
+            composer.render();
+
+            if (!pointerActive && fadeOpacity <= 0.001) { running = false; return; }
+            requestAnimationFrame(animate);
+        }
+
+        // Start immediately
+        ensureLoop();
+        console.log('✅ GhostCursor initialized — move your cursor!');
+    </script>
+</body>
+
+</html>
